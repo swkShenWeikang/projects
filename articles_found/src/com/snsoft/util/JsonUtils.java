@@ -2,6 +2,7 @@ package com.snsoft.util;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 
@@ -109,10 +110,15 @@ public final class JsonUtils {
 					reqParams.put(key, value);
 				}
 			}
+		}else{//用request自带方法取参数
+			Enumeration<String> enu = request.getParameterNames();
+			while(enu.hasMoreElements()){
+				String tempEnu = enu.nextElement();
+				reqParams.put(tempEnu, request.getParameter(tempEnu));
+			}
 		}
-		     
+		
 		return reqParams;
 	}
-	
 	
 }
