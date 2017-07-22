@@ -23,8 +23,15 @@ import net.sf.json.JSONObject;
  * 
  * @Description TODO
  *    json工具类
+ *    commons-beanutils-1.9.3.jar
+ *    commons-collections-3.2.2.jar
+ *    commons-lang-2.6.jar
+ *    commons-logging-1.2.jar
+ *    ezmorph-1.0.6.jar
+ *    json_simple-1.1.jar
+ *    json-lib-2.4-jdk15.jar
  */
-public class JsonUtils {
+public final class JsonUtils {
 	
 	/**
 	 * 返回json字符串
@@ -57,6 +64,8 @@ public class JsonUtils {
 			return null;
 		HashMap<String,String> reqParams = new HashMap<String, String>();
 		request.setCharacterEncoding("UTF-8");
+		
+		//取得数据流
 		BufferedReader reader = request.getReader();
 		StringBuffer buffer = new StringBuffer("");
 		String temp;
@@ -66,19 +75,27 @@ public class JsonUtils {
 		reader.close();
 		String acceptjson = buffer.toString();
 		
+		//解析数据
 		if(!StringUtils.isBlank(acceptjson)){
 			if(acceptjson.contains("=")){
-				if(acceptjson.contains("&")){
+				if(acceptjson.contains("&")){//处理多个参数的情况
 					String[] map = acceptjson.split("&");
 					for(String item : map){
 						
 						String[] tempItem = item.split("=");
 						String value = "";
-						if(tempItem.length == 2){
+						if(tempItem.length == 2){//防止数组越界
 							value = tempItem[1];
 						}
 						reqParams.put(tempItem[0], value);
 					}
+				}else{//处理1个参数的情况
+					String[] map = acceptjson.split("=");
+					String value = "";
+					if(map.length == 2){//防止数组越界
+						value = map[1];
+					}
+					reqParams.put(map[0], value);
 				}
 			} else {
 				//json字符串转化为JSONObject对象
