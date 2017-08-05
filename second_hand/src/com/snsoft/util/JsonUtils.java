@@ -2,6 +2,7 @@ package com.snsoft.util;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -64,7 +65,7 @@ public final class JsonUtils {
 		if(request == null)
 			return null;
 		HashMap<String,String> reqParams = new HashMap<String, String>();
-		request.setCharacterEncoding("UTF-8");
+		request.setCharacterEncoding(AllConstant.ENCONDING);
 		
 		//取得数据流
 		BufferedReader reader = request.getReader();
@@ -74,7 +75,8 @@ public final class JsonUtils {
 			buffer.append(temp);
 		}
 		reader.close();
-		String acceptjson = buffer.toString();
+//		String acceptjson = buffer.toString();//若前端进行了URL编码，则需解码
+		String acceptjson = URLDecoder.decode(buffer.toString(), AllConstant.ENCONDING);
 		
 		//解析数据
 		if(!StringUtils.isBlank(acceptjson)){
