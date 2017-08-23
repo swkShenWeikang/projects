@@ -55,6 +55,36 @@ public class LoginDao {
 		return result;
 	}
 	
+	/**
+	 * 添加一个用户
+	 * @param params
+	 * @return
+	 */
+	public boolean addOneUser(HashMap<String, String> params){
+		boolean result = false;//返回结果
+		
+		Connection conn = null;
+		PreparedStatement pstat = null;
+		String sql = "INSERT INTO user_info(account, `password`, username, college, clazz) "
+				+ "VALUES(?, ?, ?, ?, ?)";
+		
+		try {
+			conn = JDBCUtils.getConnection();//取得连接
+			pstat = conn.prepareStatement(sql);
+			pstat.setString(1, params.get("account"));//设置参数
+			pstat.setString(2, params.get("password"));//设置参数
+			pstat.setString(3, params.get("username"));//设置参数
+			pstat.setString(4, params.get("college"));//设置参数
+			pstat.setString(5, params.get("clazz"));//设置参数
+			pstat.execute();//执行SQL
+			result = true;
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return result;
+	}
+	
 	
 	/**
 	 * 测试
@@ -64,11 +94,17 @@ public class LoginDao {
 	public static void main(String[] args) throws SQLException {
 		LoginDao ld = new LoginDao();
 		HashMap<String, String> param = new HashMap<String, String>();
-		param.put("account", "111111");
+		param.put("account", "1111");
+		param.put("password", "1111");
+		param.put("username", "王五");
+		param.put("college", "信电");
+		param.put("clazz", "计算机");
 		
-		HashMap<String, Object> res = null;
-		res = ld.getUserInfo(param);
-		System.out.println(res);
+//		HashMap<String, Object> res = null;
+//		res = ld.getUserInfo(param);
+//		System.out.println(res);
+		
+		System.out.println(ld.addOneUser(param));
 	}
 
 }
