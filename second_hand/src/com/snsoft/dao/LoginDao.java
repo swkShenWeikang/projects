@@ -35,12 +35,13 @@ public class LoginDao {
 		Connection conn = null;
 		PreparedStatement pstat = null;
 		ResultSet rs = null;
-		String sql = "SELECT * FROM user_info WHERE account = ?";
+		String sql = "SELECT * FROM user_info WHERE account = ? AND identity = ?";
 		
 		try {
 			conn = JDBCUtils.getConnection();//取得连接
 			pstat = conn.prepareStatement(sql);
 			pstat.setString(1, params.get("account"));//设置参数
+			pstat.setString(2, params.get("identity"));//设置参数
 			rs = pstat.executeQuery();//查询
 			result = JDBCUtils.getHashMap(rs);//获取处理后的结果集
 		} catch (SQLException e) {
@@ -57,6 +58,35 @@ public class LoginDao {
 	
 	
 	/**
+	 * 添加一个用户
+	 * @param params
+	 * @return
+	 */
+	public boolean addOneUser(HashMap<String, String> params){
+		boolean result = false;//返回结果
+		
+		Connection conn = null;
+		PreparedStatement pstat = null;
+		String sql = "INSERT INTO user_info(account, `password`, username, identity) "
+				+ "VALUES(?, ?, ?, '1')";
+		
+		try {
+			conn = JDBCUtils.getConnection();//取得连接
+			pstat = conn.prepareStatement(sql);
+			pstat.setString(1, params.get("account"));//设置参数
+			pstat.setString(2, params.get("password"));//设置参数
+			pstat.setString(3, params.get("username"));//设置参数
+			pstat.execute();//执行SQL
+			result = true;
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return result;
+	}
+	
+	
+	/**
 	 * 测试
 	 * @param args
 	 * @throws SQLException
@@ -64,11 +94,16 @@ public class LoginDao {
 	public static void main(String[] args) throws SQLException {
 		LoginDao ld = new LoginDao();
 		HashMap<String, String> param = new HashMap<String, String>();
-		param.put("account", "111111");
+		param.put("account", "1111");
+		param.put("password", "1111");
+		param.put("username", "王五");
+		param.put("identity", "0");
 		
 		HashMap<String, Object> res = null;
 		res = ld.getUserInfo(param);
 		System.out.println(res);
+		
+//		System.out.println(ld.addOneUser(param));
 	}
 
 }

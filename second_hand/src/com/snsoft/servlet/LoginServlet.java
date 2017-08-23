@@ -13,7 +13,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.StringUtils;
 
 import com.snsoft.dao.LoginDao;
+import com.snsoft.jwc.ConnectTimeOutException;
+import com.snsoft.jwc.ConnectToJWC;
+import com.snsoft.jwc.StudentDataBean;
 import com.snsoft.util.AllConstant;
+import com.snsoft.util.EncodeUtils;
 import com.snsoft.util.JsonUtils;
 
 
@@ -57,40 +61,92 @@ public class LoginServlet extends HttpServlet {
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) 
 			throws ServletException, IOException {
-		//返回结果
-		String result = "";
-		//解析请求中的参数
-		HashMap<String, String> param = JsonUtils.getRequestParams(request);
-		
-		//参数校验
-		if(StringUtils.isEmpty(param.get("account"))){
-			result = JsonUtils.jsonResponse(null, AllConstant.CODE_ERROR, "账号不能为空！");
-		}else if(StringUtils.isEmpty(param.get("password"))){
-			result = JsonUtils.jsonResponse(null, AllConstant.CODE_ERROR, "密码不能为空！");
-		}else{
-			try {
-				//调用dao
-				LoginDao ld = new LoginDao();
-				HashMap<String, Object> res = ld.getUserInfo(param);
-				if(res == null){
-					result = JsonUtils.jsonResponse(null, AllConstant.CODE_ERROR, "该账号不存在！");
-				}else{
-					if(param.get("password").equals(res.get("password"))){
-						result = JsonUtils.jsonResponse(res, AllConstant.CODE_SUCCESS, "登录成功！");
-					}else{
-						result = JsonUtils.jsonResponse(null, AllConstant.CODE_ERROR, "密码错误！");
-					}
-				}
-			} catch (SQLException e) {
-				result = JsonUtils.jsonResponse(null, AllConstant.CODE_ERROR, AllConstant.MSG_ERROR);
-				e.printStackTrace();
-			}
-			
-		}
-		
 		response.setContentType("application/json");
 		response.setCharacterEncoding("utf-8");
-		response.getWriter().write(result);
-	}
+		
+		//参数校验
+		HashMap<String, String> params = JsonUtils.getRequestParams(request);
+		if (StringUtils.isEmpty(params.get("account"))) {
+			response.getWriter().write(
+					JsonUtils.jsonResponse(null, AllConstant.CODE_ERROR, "账号不能为空！"));
+			return;
+		}
+		if(StringUtils.isEmpty(params.get("password"))){
+			response.getWriter().write(
+					JsonUtils.jsonResponse(null, AllConstant.CODE_ERROR, "密码不能为空！"));
+			return;
+		}
+		if(StringUtils.isEmpty(params.get("identity"))){
+			response.getWriter().write(
+					JsonUtils.jsonResponse(null, AllConstant.CODE_ERROR, "身份不能为空！"));
+			return;
+		}
+		
+		//查询账号信息
+		HashMap<String, Object> userInfo = null;
+		LoginDao ld = new LoginDao();
+		try {
+			userInfo = ld.getUserInfo(params);
+		} catch (SQLException e) {
+			e.printStackTrace();
+			response.getWriter().write(
+					JsonUtils.jsonResponse(null, AllConstant.CODE_ERROR, AllConstant.MSG_ERROR));
+			return;
+		}//try
+		
+		//若数据库中无账号信息，则抓教务处数据，校对密码，存入数据
+		if(userInfo == null){
+			if("1".equals(params.get("identity"))){//普通用户身份，则从教务处抓取数据
+				ConnectToJWC conn = new ConnectToJWC(params.get("account"));
+				boolean flag = conn.checkVPNAccount(params.get("account"), params.get("password"));
+				
+				if(flag){//账号密码正确
+					//抓取教务处信息，添加到数据库
+					StudentDataBean studentData = null;
+					try {
+						studentData = conn.getStudentData();//访问教务处
+					} catch (ConnectTimeOutException e) {
+						e.printStackTrace();
+						response.getWriter().write(
+								JsonUtils.jsonResponse(null, AllConstant.CODE_ERROR, "连接教务处超时！"));
+						return;
+					}//try
+					
+					if(studentData != null){//用户信息添加到数据库
+						params.put("username", studentData.getName());
+						params.put("password", EncodeUtils.encodeByMd5(params.get("password")));//加密
+						boolean flag2 = ld.addOneUser(params);
+						if(flag2){
+							response.getWriter().write(
+									JsonUtils.jsonResponse(null, AllConstant.CODE_SUCCESS, AllConstant.MSG_SUCCESS));
+							return;
+						}
+					}
+					
+				}else{//账号密码错误
+					response.getWriter().write(
+							JsonUtils.jsonResponse(null, AllConstant.CODE_ERROR, "账号或密码错误"));
+					return;
+				}//if3
+			}else{
+				response.getWriter().write(
+						JsonUtils.jsonResponse(null, AllConstant.CODE_ERROR, "账号不存在或身份错误！"));
+				return;
+			}//if2
+			
+		}else{//数据库中有账号信息，则直接校验密码
+			String password = EncodeUtils.encodeByMd5(params.get("password"));
+			if(password.equals(userInfo.get("password"))){
+				response.getWriter().write(
+						JsonUtils.jsonResponse(null, AllConstant.CODE_SUCCESS, AllConstant.MSG_SUCCESS));
+				return;
+			}else{
+				response.getWriter().write(
+						JsonUtils.jsonResponse(null, AllConstant.CODE_ERROR, "账号或密码错误"));
+				return;
+			}//if2
+		}//if1
+		
+	}//post
 
-}
+}//class

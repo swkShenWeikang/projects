@@ -10,7 +10,7 @@ public class ServletTest {
 	@Test
 	public void servletPostTest(){
 		String url = "http://localhost:8080/articles_found/login";
-		InputStream is = HttpUtils.sendPost(url, "{account:'111111',password:'111111'}");
+		InputStream is = HttpUtils.sendPost(url, "{account:'189140086',password:'syau1995'}");
 		String result = HttpUtils.getString(is);
 		System.out.println(result);
 	}
@@ -23,6 +23,12 @@ public class ServletTest {
 		System.out.println(result);
 	}
 	
-	
+	@Test
+	public void ViewServletPostTest(){
+		String url = "http://localhost:8080/articles_found/view";
+		InputStream is = HttpUtils.sendPost(url, "{account:'111111',id:'111111'}");
+		String result = HttpUtils.getString(is);
+		System.out.println(result);
+	}
 	
 }
